@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.bluetrainsoftware.parent</groupId>
     <artifactId>central-parent</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
   </parent>
 
   <artifactId>java-parent</artifactId>
@@ -12,8 +12,11 @@
   <name>Blue Train Software Ltd - Java Parent</name>
 
   <properties>
+    <bts.skip.integration.tests>false</bts.skip.integration.tests>
+    <bts.skip.functional.tests>false</bts.skip.functional.tests>
     <sonar.language>java</sonar.language>
   </properties>
+
 
   <scm>
     <connection>scm:git:git@github.com:rvowles/java-parent.git</connection>
@@ -25,9 +28,28 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>com.bluetrainsoftware.maven</groupId>
+        <artifactId>release-pom</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>generate-dep-list</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>release-pom</goal>
+            </goals>
+            <configuration>
+              <useMaven2>false</useMaven2>
+              <outputFile>${project.build.outputDirectory}/META-INF/maven/released-pom.xml</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.6.2.201302030002</version>
+        <version>0.6.5.201403032054</version>
         <executions>
           <execution>
             <id>prepare-agent</id>
@@ -59,10 +81,69 @@
           </includes>
           <excludes>
             <exclude>**/*$*</exclude>
+            <exclude>**/*IntegrationTest.java</exclude>
+            <exclude>**/*IntegrationTests.java</exclude>
+            <exclude>**/*FunctionalTest.java</exclude>
+            <exclude>**/*FunctionalTests.java</exclude>
           </excludes>
         </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skipTests>${bts.skip.integration.tests}</skipTests>
+              <includes>
+                <include>**/*IntegrationTest.java</include>
+                <include>**/*IntegrationTests.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*$*</exclude>
+              </excludes>
+              <test>${it.test}</test> <!-- specify -Dit.test=testname to run individual test -->
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>failsafe-maven-plugin</artifactId>
+        <version>2.4.3-alpha-1</version>
+        <configuration>
+          <argLine>-Xms512M -Xmx512M</argLine>
+          <failIfNoTests>false</failIfNoTests>
+          <encoding>${project.build.sourceEncoding}</encoding>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+          <summaryFile>${project.build.directory}/surefire-reports/failsafe-summary.xml</summaryFile>
+          <skipTests>${bts.skip.functional.tests}</skipTests>
+          <excludes>
+            <exclude>**/*$*</exclude>
+          </excludes>
+          <includes>
+            <include>**/*FunctionalTest.java</include>
+            <include>**/*FunctionalTests.java</include>
+          </includes>
+          <test>${ft.test}</test>
+        </configuration>
+        <executions>
+          <execution>
+            <id>functional-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
@@ -77,6 +158,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
